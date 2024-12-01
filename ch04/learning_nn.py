@@ -56,7 +56,7 @@ class TwoLayersNet:
 
         return grads
 
-def plot_loss(arg, data):
+def plot_loss(data):
     plt.plot(data, marker = 'o')
 
     plt.title('Loss')
@@ -68,10 +68,10 @@ def plot_loss(arg, data):
 (x_train, t_train), (x_test, t_test) = \
 load_mnist(normalize=True, one_hot_label=True)
 
-train_loss_list = []
+train_loss_list_float = []
 
 # 超参数
-iters_num = 10000
+iters_num = 2
 epoch = iters_num
 train_size = x_train.shape[0]
 batch_size = 100
@@ -81,6 +81,7 @@ learning_rate = 0.1
 network = TwoLayersNet(input_size=784, hidden_size=50, output_size=10)
 
 for i in range(epoch):
+    print(i)
     #获取mini_batch
     batch_mask = np.random.choice(train_size, batch_size)
     x_batch = x_train[batch_mask]
@@ -95,6 +96,8 @@ for i in range(epoch):
 
     # Log the period
     loss = network.loss(x_train, t_train)
-    train_loss_list.append(loss)
+    train_loss_list_float.append(loss)
 
+train_loss_list = [f.item() for f in train_loss_list_float]
+print(train_loss_list)
 plot_loss(train_loss_list)
