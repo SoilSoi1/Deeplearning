@@ -65,39 +65,61 @@ def plot_loss(data):
 
     plt.show()
 
-(x_train, t_train), (x_test, t_test) = \
-load_mnist(normalize=True, one_hot_label=True)
+def main():
+    (x_train, t_train), (x_test, t_test) = \
+    load_mnist(normalize=True, one_hot_label=True)
 
-train_loss_list_float = []
+    # Log
+    train_loss_list_float = []
+    train_acc_list = []
+    test_acc_list = []
 
-# 超参数
-iters_num = 2
-epoch = iters_num
-train_size = x_train.shape[0]
-batch_size = 100
-learning_rate = 0.1
 
-# 初始化神经网络
-network = TwoLayersNet(input_size=784, hidden_size=50, output_size=10)
 
-for i in range(epoch):
-    print(i)
-    #获取mini_batch
-    batch_mask = np.random.choice(train_size, batch_size)
-    x_batch = x_train[batch_mask]
-    t_batch = t_train[batch_mask]
+    # 超参数
+    iters_num = 10000
+    train_size = x_train.shape[0]
+    batch_size = 100
+    learning_rate = 0.1
 
-    # 计算梯度
-    grad = network.numerical_gradient(x_batch, t_batch)
+    # Steps every epoch involves
+    iter_per_epoch = max(train_size / batch_size, 1)
 
-    # 更新参数
-    for key in ('W1', 'b1', 'W2', 'b2'):
-        network.params[key] -= learning_rate * grad[key]
+    # 初始化神经网络
+    network = TwoLayersNet(input_size=784, hidden_size=50, output_size=10)
 
-    # Log the period
-    loss = network.loss(x_train, t_train)
-    train_loss_list_float.append(loss)
+    for i in range(iters_num):
+        print(i)
+        #获取mini_batch
+        batch_mask = np.random.choice(train_size, batch_size)
+        x_batch = x_train[batch_mask]
+        t_batch = t_train[batch_mask]
 
-train_loss_list = [f.item() for f in train_loss_list_float]
-print(train_loss_list)
-plot_loss(train_loss_list)
+        # 计算梯度
+        grad = network.numerical_gradient(x_batch, t_batch)
+
+        # 更新参数
+        for key in ('W1', 'b1', 'W2', 'b2'):
+            network.params[key] -= learning_rate * grad[key]
+
+        # Log the period
+        loss = network.loss(x_batch, t_batch)
+        train_loss_list_float.append(loss)
+
+        # 计算每个epoch的识别精度
+        if i % iter_per_epoch == 0:
+            train_acc = network.accuracy(x_train, t_train)
+            test_acc = network.accuracy(x_test, t_test)
+            train_acc_list.append(train_acc)
+            test_acc_list.append(test_acc)
+            print(f'''train accuracy | test accuracy
+            {train_acc} | {test_acc}
+            ''')
+
+
+    train_loss_list = [f.item() for f in train_loss_list_float]
+    print(train_loss_list)
+    plot_loss(train_loss_list)
+
+if __name__ == "__main__":
+    main()
