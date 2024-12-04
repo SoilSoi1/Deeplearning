@@ -2,10 +2,14 @@ import sys, os
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from common.layers import Affine, Relu, SoftmaxWithLoss
+
 sys.path.append(os.pardir)
 from common.functions import *
 from common.gradient import numerical_gradient
 
+from collections import OrderedDict
 from dataset.mnist import load_mnist
 
 class TwoLayersNet:
@@ -19,32 +23,43 @@ class TwoLayersNet:
         self.params['W2'] = weight_init_std * np.random.randn(hidden_size,output_size)
         self.params['b2'] = np.zeros(output_size)
 
+        # Generate layers
+        self.layers = OrderedDict()
+        self.layers['Affine1'] = Affine(self.params['W1'], self.params['b1'])
+        self.layers['Relu1'] = Relu()
+        self.layers['Affine2'] = Affine(self.params['W2'], self.params['b2'])
+
+        self.lastLayer = SoftmaxWithLoss()
+
     def predict(self, x):
-        W1, W2 = self.params['W1'], self.params['W2']
-        b1, b2 = self.params['b1'], self.params['b2']
+        # 注释掉的为手动实现的计算
+        # W1, W2 = self.params['W1'], self.params['W2']
+        # b1, b2 = self.params['b1'], self.params['b2']
+        # a1 = np.dot(x, W1) + b1
+        # z1 = sigmoid(a1)
+        # a2 = np.dot(z1, W2) + b2
+        # z2 = sigmoid(a2)
 
-        a1 = np.dot(x, W1) + b1
-        z1 = sigmoid(a1)
+        for layer in self.layers.values():
+            x = layer.forward(x)
 
-        a2 = np.dot(z1, W2) + b2
-        z2 = sigmoid(a2)
-
-        return z2
+        return x
 
     # t:监督数据
     def loss(self, x, t):
         y = self.predict(x)
 
-        return cross_entropy_error(y, t)
+        return self.lastLayer.forward(y, t)
 
     def accuracy(self, x, t):
         y = self.predict(x)
         y = np.argmax(y, axis=1)
-        t = np.argmax(t, axis=1)
-
+        if t.ndim != 1:
+            t = np.argmax(t, axis=1)
         accuracy = np.sum(y == t) / float(x.shape[0])
         return accuracy
 
+    # 数值微分法求梯度
     def numerical_gradient(self, x, t):
         loss_W = lambda W: self.loss(x, t)
 
@@ -55,6 +70,28 @@ class TwoLayersNet:
         grads['b2'] = numerical_gradient(loss_W, self.params['b2'])
 
         return grads
+
+    # 反向传播法求梯度（链式法则）
+    def gradient(self, x, t):
+        # Forward
+        self.loss(x, t)
+
+        # Backward
+        dout = 1
+        dout = self.lastLayer.backward(dout)
+
+        # 向前传播方向的层
+        layers = list(self.layers.values())
+        # BP时需要反方向
+        layers.reverse()
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        grads = {}
+        grads['W1'] = self.layers['Affine1'].dW
+        grads['b1'] = self.layers['Affine1'].db
+        grads['W2'] = self.layers['Affine2'].dW
+        grads['b2'] = self.layers['Affine2'].db
 
 def plot_loss(data):
     plt.plot(data, marker = 'o')
@@ -77,7 +114,7 @@ def main():
 
 
     # 超参数
-    iters_num = 10000
+    iters_num = 100
     train_size = x_train.shape[0]
     batch_size = 100
     learning_rate = 0.1
@@ -107,7 +144,7 @@ def main():
         train_loss_list_float.append(loss)
 
         # 计算每个epoch的识别精度
-        if i % iter_per_epoch == 0:
+        if i % 5 == 0:
             train_acc = network.accuracy(x_train, t_train)
             test_acc = network.accuracy(x_test, t_test)
             train_acc_list.append(train_acc)
