@@ -104,9 +104,26 @@ class SGD:
         for key in params.keys():
             params[key] -= self.lr * grads[key]
 
+class Momentum:
+    def __init__(self, lr=0.01, momentum=0.9):
+        self.lr = lr
+        self.momentum = momentum
+        self.v = None
+
+    def update(self, params, grads):
+        # 初始化速度，这里的速度也为字典类型，值全为0
+        if self.v is None:
+            self.v = {}
+            for key, val in params.items():
+                self.v[key] = np.zeros_like(val)
+
+        for key in params.keys():
+            self.v[key] = self.momentum*self.v[key] - self.lr*grads[key]
+            params[key] += self.v[key]
+
 
 def plot_loss(data):
-    plt.plot(data, marker = 'o')
+    plt.plot(data)
 
     plt.title('Loss')
     plt.xlabel('epoch')
@@ -126,7 +143,7 @@ def train():
 
 
     # 超参数
-    iters_num = 10000
+    iters_num = 1000
     train_size = x_train.shape[0]
     batch_size = 100
     learning_rate = 0.1
@@ -136,6 +153,7 @@ def train():
 
     # 初始化神经网络
     network = TwoLayersNet(input_size=784, hidden_size=50, output_size=10)
+    optimizer = Momentum()
 
     for i in range(iters_num):
         print(i)
@@ -148,8 +166,7 @@ def train():
         grad = network.gradient(x_batch, t_batch)
 
         # 更新参数
-        for key in network.params.keys():
-            network.params[key] -= learning_rate * grad[key]
+        optimizer.update(network.params, grad)
 
         # Log the period
         loss = network.loss(x_batch, t_batch)
