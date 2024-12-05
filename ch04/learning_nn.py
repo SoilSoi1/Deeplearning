@@ -93,6 +93,18 @@ class TwoLayersNet:
         grads['W2'] = self.layers['Affine2'].dW
         grads['b2'] = self.layers['Affine2'].db
 
+        return grads
+
+# Usage: optimizer = SGD()
+class SGD:
+    def __init__(self, lr = 0.01):
+        self.lr = lr
+
+    def update(self, params, grads):
+        for key in params.keys():
+            params[key] -= self.lr * grads[key]
+
+
 def plot_loss(data):
     plt.plot(data, marker = 'o')
 
@@ -102,7 +114,7 @@ def plot_loss(data):
 
     plt.show()
 
-def main():
+def train():
     (x_train, t_train), (x_test, t_test) = \
     load_mnist(normalize=True, one_hot_label=True)
 
@@ -114,7 +126,7 @@ def main():
 
 
     # 超参数
-    iters_num = 100
+    iters_num = 10000
     train_size = x_train.shape[0]
     batch_size = 100
     learning_rate = 0.1
@@ -133,10 +145,10 @@ def main():
         t_batch = t_train[batch_mask]
 
         # 计算梯度
-        grad = network.numerical_gradient(x_batch, t_batch)
+        grad = network.gradient(x_batch, t_batch)
 
         # 更新参数
-        for key in ('W1', 'b1', 'W2', 'b2'):
+        for key in network.params.keys():
             network.params[key] -= learning_rate * grad[key]
 
         # Log the period
@@ -144,19 +156,18 @@ def main():
         train_loss_list_float.append(loss)
 
         # 计算每个epoch的识别精度
-        if i % 5 == 0:
+        if i % iter_per_epoch == 0:
             train_acc = network.accuracy(x_train, t_train)
             test_acc = network.accuracy(x_test, t_test)
             train_acc_list.append(train_acc)
             test_acc_list.append(test_acc)
-            print(f'''train accuracy | test accuracy
-            {train_acc} | {test_acc}
-            ''')
+            # print(f'''train accuracy | test accuracy
+            # {train_acc} | {test_acc}
+            # ''')
 
-
+    # 可视化
     train_loss_list = [f.item() for f in train_loss_list_float]
-    print(train_loss_list)
     plot_loss(train_loss_list)
 
 if __name__ == "__main__":
-    main()
+    train()
