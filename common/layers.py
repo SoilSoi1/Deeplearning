@@ -9,9 +9,11 @@ class Relu:
         self.mask = None
 
     def forward(self, x):
+        # print("Input shape:", x.shape)
         self.mask = (x <= 0)
         out = x.copy()
         out[self.mask] = 0
+        # print("Output shape:", out.shape)  # 打印输出形状
 
         return out
 
@@ -38,7 +40,7 @@ class Sigmoid:
 
 
 class Affine:
-    def __init__(self, W, b):
+    def __init__(self, W, b, flatten = False):
         self.W =W
         self.b = b
         
@@ -47,6 +49,7 @@ class Affine:
         # 权重和偏置参数的导数
         self.dW = None
         self.db = None
+        self.flatten = flatten
 
     def forward(self, x):
         # 对应张量
